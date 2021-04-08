@@ -1,7 +1,12 @@
 package com.crashcourse.demo.ui.controller;
 
+import com.crashcourse.demo.service.UserService;
+import com.crashcourse.demo.shared.dto.UserDto;
 import com.crashcourse.demo.ui.model.request.UserDetailsRequestModel;
 import com.crashcourse.demo.ui.model.response.UserRest;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +22,9 @@ import java.util.UUID;
 public class UserController {
 
   Map<String, UserRest> users;
+
+  @Autowired
+  UserService userService;
 
   @GetMapping
   public String getUsers(
@@ -37,24 +45,20 @@ public class UserController {
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
-  @PostMapping(
-      consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
-      produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping
   public ResponseEntity<UserRest> createUser(
       @Valid @RequestBody UserDetailsRequestModel userDetails) {
 
     UserRest returnValue = new UserRest();
-    returnValue.setFirstName(userDetails.getFirstName());
-    returnValue.setLastName(userDetails.getLastName());
-    returnValue.setEmail(userDetails.getEmail());
 
-    String userId = UUID.randomUUID().toString();
-    returnValue.setUserId(userId);
+    UserDto userDto = new UserDto();
+    BeanUtils.copyProperties(userDetails, userDto);
 
-    if (users == null) users = new HashMap<>();
-    users.put(userId, returnValue);
+    UserDto createdUser = userService.createUser(userDto);
+    BeanUtils.copyProperties(createdUser, returnValue);
 
-    return new ResponseEntity<>(returnValue, HttpStatus.CREATED);
+    return new ResponseEntity<>(returnValue, HttpStatus.OK);
+
   }
 
   @PutMapping("/{userId}")

@@ -1,4 +1,4 @@
-package com.crashcourse.demo.repository;
+package com.crashcourse.demo.io.repository;
 
 import com.crashcourse.demo.io.entity.UserEntity;
 import org.springframework.data.repository.CrudRepository;

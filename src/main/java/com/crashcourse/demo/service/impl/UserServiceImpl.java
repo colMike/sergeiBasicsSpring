@@ -1,7 +1,7 @@
 package com.crashcourse.demo.service.impl;
 
 import com.crashcourse.demo.io.entity.UserEntity;
-import com.crashcourse.demo.repository.UserRepository;
+import com.crashcourse.demo.io.repository.UserRepository;
 import com.crashcourse.demo.service.UserService;
 import com.crashcourse.demo.shared.Utils;
 import com.crashcourse.demo.shared.dto.UserDto;
@@ -59,5 +59,17 @@ public class UserServiceImpl implements UserService {
 
         return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
 
+    }
+
+    @Override
+    public UserDto getUser(String email) {
+
+        UserEntity userEntity = userRepository.findByEmail(email);
+
+        if (userEntity == null) throw new UsernameNotFoundException(email);
+
+        UserDto returnValue = new UserDto();
+        BeanUtils.copyProperties(userEntity, returnValue);
+        return returnValue;
     }
 }

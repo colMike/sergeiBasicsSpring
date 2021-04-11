@@ -6,16 +6,13 @@ import com.crashcourse.demo.ui.model.request.UserDetailsRequestModel;
 import com.crashcourse.demo.ui.model.response.UserRest;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("users")
@@ -23,14 +20,13 @@ public class UserController {
 
   Map<String, UserRest> users;
 
-  @Autowired
-  UserService userService;
+  @Autowired UserService userService;
 
   @GetMapping
   public String getUsers(
       @RequestParam(value = "page", defaultValue = "1") int page,
       @RequestParam(value = "limit", defaultValue = "25") int limit) {
-    return "get users was these query string request params: " + page + ": " + limit;
+    return "get users was called with these query string request params: " + page + ": " + limit;
   }
 
   @GetMapping(
@@ -58,7 +54,6 @@ public class UserController {
     BeanUtils.copyProperties(createdUser, returnValue);
 
     return new ResponseEntity<>(returnValue, HttpStatus.OK);
-
   }
 
   @PutMapping("/{userId}")

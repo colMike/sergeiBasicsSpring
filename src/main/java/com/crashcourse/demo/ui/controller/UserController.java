@@ -26,19 +26,23 @@ public class UserController {
   public String getUsers(
       @RequestParam(value = "page", defaultValue = "1") int page,
       @RequestParam(value = "limit", defaultValue = "25") int limit) {
+
+    //    userService.
+
     return "get users was called with these query string request params: " + page + ": " + limit;
   }
 
   @GetMapping(
-      path = "/{userId}",
+      path = "/{id}",
       produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-  public ResponseEntity<UserRest> getUser(@PathVariable String userId) {
+  public ResponseEntity<UserRest> getUser(@PathVariable String id) {
 
-    if (users.containsKey(userId)) {
-      return new ResponseEntity<>(users.get(userId), HttpStatus.OK);
-    }
+    UserRest returnValue = new UserRest();
 
-    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    UserDto userDto = userService.getUserByUserId(id);
+    BeanUtils.copyProperties(userDto, returnValue);
+
+    return new ResponseEntity<>(returnValue, HttpStatus.OK);
   }
 
   @PostMapping
@@ -56,11 +60,14 @@ public class UserController {
     return new ResponseEntity<>(returnValue, HttpStatus.OK);
   }
 
-  @PutMapping("/{userId}")
+  @PutMapping(
+      path = "/{id}",
+      produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
+      consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
   public ResponseEntity<UserRest> updateUser(
-      @PathVariable String userId, @RequestBody() UserDetailsRequestModel updatedUser) {
+      @PathVariable String id, @RequestBody() UserDetailsRequestModel updatedUser) {
 
-    UserRest user = users.get(userId);
+    UserRest user = users.get(id);
 
     user.setFirstName(updatedUser.getFirstName());
     user.setLastName(updatedUser.getLastName());

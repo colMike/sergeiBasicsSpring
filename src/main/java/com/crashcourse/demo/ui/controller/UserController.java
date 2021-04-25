@@ -17,91 +17,100 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("users")
 public class UserController {
 
-    Map<String, UserRest> users;
+  Map<String, UserRest> users;
 
-    Logger logger = LoggerFactory.getLogger(UserController.class);
+  Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    @Autowired
-    UserService userService;
+  @Autowired UserService userService;
 
-    @GetMapping
-    public String getUsers(
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "limit", defaultValue = "25") int limit) {
+  @GetMapping(produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  public List<UserRest> getUsers(
+      @RequestParam(value = "page", defaultValue = "0") int page,
+      @RequestParam(value = "limit", defaultValue = "25") int limit) {
 
-        //    userService.
+    List<UserRest> returnValue = new ArrayList<>();
+    List<UserDto> users = userService.getAllUsers(page, limit);
 
-        return "get users was called with these query string request params: " + page + ": " + limit;
+    for (UserDto userDto : users) {
+
+      UserRest userModel = new UserRest();
+      BeanUtils.copyProperties(userDto, userModel);
+      returnValue.add(userModel);
     }
 
-    @GetMapping(
-            path = "/{id}",
-            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<UserRest> getUser(@PathVariable String id) {
+    return returnValue;
+  }
 
-        UserRest returnValue = new UserRest();
+  @GetMapping(
+      path = "/{id}",
+      produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  public ResponseEntity<UserRest> getUser(@PathVariable String id) {
 
-        UserDto userDto = userService.getUserByUserId(id);
-        BeanUtils.copyProperties(userDto, returnValue);
+    UserRest returnValue = new UserRest();
 
-        return new ResponseEntity<>(returnValue, HttpStatus.OK);
+    UserDto userDto = userService.getUserByUserId(id);
+    BeanUtils.copyProperties(userDto, returnValue);
+
+    return new ResponseEntity<>(returnValue, HttpStatus.OK);
+  }
+
+  @PostMapping
+  public ResponseEntity<UserRest> createUser(
+      @Valid @RequestBody UserDetailsRequestModel userDetails) throws UserServiceException {
+
+    UserRest returnValue = new UserRest();
+
+    if (userDetails.getFirstName().isEmpty()) {
+      logger.error(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
+      throw new UserServiceException(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
     }
 
-    @PostMapping
-    public ResponseEntity<UserRest> createUser(
-            @Valid @RequestBody UserDetailsRequestModel userDetails) throws UserServiceException {
+    UserDto userDto = new UserDto();
+    BeanUtils.copyProperties(userDetails, userDto);
 
-        UserRest returnValue = new UserRest();
+    UserDto createdUser = userService.createUser(userDto);
+    BeanUtils.copyProperties(createdUser, returnValue);
 
-        if (userDetails.getFirstName().isEmpty()) {
-            logger.error(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
-            throw new UserServiceException(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
-        }
+    return new ResponseEntity<>(returnValue, HttpStatus.OK);
+  }
 
-        UserDto userDto = new UserDto();
-        BeanUtils.copyProperties(userDetails, userDto);
+  @PutMapping(
+      path = "/{id}",
+      produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
+      consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  public ResponseEntity<UserRest> updateUser(
+      @PathVariable String id, @RequestBody() UserDetailsRequestModel userDetails) {
 
-        UserDto createdUser = userService.createUser(userDto);
-        BeanUtils.copyProperties(createdUser, returnValue);
+    UserRest returnValue = new UserRest();
 
-        return new ResponseEntity<>(returnValue, HttpStatus.OK);
-    }
+    UserDto userDto = new UserDto();
+    BeanUtils.copyProperties(userDetails, userDto);
 
-    @PutMapping(
-            path = "/{id}",
-            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
-            consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<UserRest> updateUser(
-            @PathVariable String id, @RequestBody() UserDetailsRequestModel userDetails) {
+    UserDto updatedUser = userService.updateUser(id, userDto);
+    BeanUtils.copyProperties(updatedUser, returnValue);
 
-        UserRest returnValue = new UserRest();
+    return new ResponseEntity<>(returnValue, HttpStatus.OK);
+  }
 
-        UserDto userDto = new UserDto();
-        BeanUtils.copyProperties(userDetails, userDto);
+  @DeleteMapping(
+      path = "/{userId}",
+      produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  public OperationStatusModel deleteUser(@PathVariable String userId) {
 
-        UserDto updatedUser = userService.updateUser(id, userDto);
-        BeanUtils.copyProperties(updatedUser, returnValue);
+    OperationStatusModel returnValue = new OperationStatusModel();
+    returnValue.setOperationName("DELETE");
+    userService.deleteUser(userId);
 
-        return new ResponseEntity<>(returnValue, HttpStatus.OK);
-    }
+    returnValue.setOperationResult("SUCCESS");
 
-    @DeleteMapping(
-            path = "/{userId}",
-            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    public OperationStatusModel deleteUser(@PathVariable String userId) {
-
-        OperationStatusModel returnValue = new OperationStatusModel();
-        returnValue.setOperationName("DELETE");
-        userService.deleteUser(userId);
-
-        returnValue.setOperationResult("SUCCESS");
-
-        return returnValue;
-    }
+    return returnValue;
+  }
 }

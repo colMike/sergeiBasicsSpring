@@ -1,9 +1,14 @@
 package com.crashcourse.demo.ui.controller;
 
+import com.crashcourse.demo.exceptions.UserServiceException;
 import com.crashcourse.demo.service.UserService;
 import com.crashcourse.demo.shared.dto.UserDto;
 import com.crashcourse.demo.ui.model.request.UserDetailsRequestModel;
+import com.crashcourse.demo.ui.model.response.ErrorMessages;
+import com.crashcourse.demo.ui.model.response.OperationStatusModel;
 import com.crashcourse.demo.ui.model.response.UserRest;
+import com.sun.org.slf4j.internal.Logger;
+import com.sun.org.slf4j.internal.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,68 +23,85 @@ import java.util.Map;
 @RequestMapping("users")
 public class UserController {
 
-  Map<String, UserRest> users;
+    Map<String, UserRest> users;
 
-  @Autowired UserService userService;
+    Logger logger = LoggerFactory.getLogger(UserController.class);
 
-  @GetMapping
-  public String getUsers(
-      @RequestParam(value = "page", defaultValue = "1") int page,
-      @RequestParam(value = "limit", defaultValue = "25") int limit) {
+    @Autowired
+    UserService userService;
 
-    //    userService.
+    @GetMapping
+    public String getUsers(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "limit", defaultValue = "25") int limit) {
 
-    return "get users was called with these query string request params: " + page + ": " + limit;
-  }
+        //    userService.
 
-  @GetMapping(
-      path = "/{id}",
-      produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-  public ResponseEntity<UserRest> getUser(@PathVariable String id) {
+        return "get users was called with these query string request params: " + page + ": " + limit;
+    }
 
-    UserRest returnValue = new UserRest();
+    @GetMapping(
+            path = "/{id}",
+            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<UserRest> getUser(@PathVariable String id) {
 
-    UserDto userDto = userService.getUserByUserId(id);
-    BeanUtils.copyProperties(userDto, returnValue);
+        UserRest returnValue = new UserRest();
 
-    return new ResponseEntity<>(returnValue, HttpStatus.OK);
-  }
+        UserDto userDto = userService.getUserByUserId(id);
+        BeanUtils.copyProperties(userDto, returnValue);
 
-  @PostMapping
-  public ResponseEntity<UserRest> createUser(
-      @Valid @RequestBody UserDetailsRequestModel userDetails) {
+        return new ResponseEntity<>(returnValue, HttpStatus.OK);
+    }
 
-    UserRest returnValue = new UserRest();
+    @PostMapping
+    public ResponseEntity<UserRest> createUser(
+            @Valid @RequestBody UserDetailsRequestModel userDetails) throws UserServiceException {
 
-    UserDto userDto = new UserDto();
-    BeanUtils.copyProperties(userDetails, userDto);
+        UserRest returnValue = new UserRest();
 
-    UserDto createdUser = userService.createUser(userDto);
-    BeanUtils.copyProperties(createdUser, returnValue);
+        if (userDetails.getFirstName().isEmpty()) {
+            logger.error(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
+            throw new UserServiceException(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
+        }
 
-    return new ResponseEntity<>(returnValue, HttpStatus.OK);
-  }
+        UserDto userDto = new UserDto();
+        BeanUtils.copyProperties(userDetails, userDto);
 
-  @PutMapping(
-      path = "/{id}",
-      produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
-      consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-  public ResponseEntity<UserRest> updateUser(
-      @PathVariable String id, @RequestBody() UserDetailsRequestModel updatedUser) {
+        UserDto createdUser = userService.createUser(userDto);
+        BeanUtils.copyProperties(createdUser, returnValue);
 
-    UserRest user = users.get(id);
+        return new ResponseEntity<>(returnValue, HttpStatus.OK);
+    }
 
-    user.setFirstName(updatedUser.getFirstName());
-    user.setLastName(updatedUser.getLastName());
+    @PutMapping(
+            path = "/{id}",
+            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
+            consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<UserRest> updateUser(
+            @PathVariable String id, @RequestBody() UserDetailsRequestModel userDetails) {
 
-    return new ResponseEntity<>(user, HttpStatus.OK);
-  }
+        UserRest returnValue = new UserRest();
 
-  @DeleteMapping("/{userId}")
-  public ResponseEntity<Void> deleteUser(@PathVariable String userId) {
+        UserDto userDto = new UserDto();
+        BeanUtils.copyProperties(userDetails, userDto);
 
-    users.remove(userId);
+        UserDto updatedUser = userService.updateUser(id, userDto);
+        BeanUtils.copyProperties(updatedUser, returnValue);
 
-    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-  }
+        return new ResponseEntity<>(returnValue, HttpStatus.OK);
+    }
+
+    @DeleteMapping(
+            path = "/{userId}",
+            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public OperationStatusModel deleteUser(@PathVariable String userId) {
+
+        OperationStatusModel returnValue = new OperationStatusModel();
+        returnValue.setOperationName("DELETE");
+        userService.deleteUser(userId);
+
+        returnValue.setOperationResult("SUCCESS");
+
+        return returnValue;
+    }
 }

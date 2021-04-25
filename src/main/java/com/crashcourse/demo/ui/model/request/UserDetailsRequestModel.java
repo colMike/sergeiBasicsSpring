@@ -7,12 +7,12 @@ import javax.validation.constraints.Size;
 public class UserDetailsRequestModel {
 
 
-  @NotNull
-  @Size(min = 2, max = 10)
+//  @NotNull
+//  @Size(min = 2, max = 10)
   private String firstName;
 
-  @NotNull
-  @Size(min = 2, max = 10)
+//  @NotNull
+//  @Size(min = 2, max = 10)
   private String lastName;
 
   @NotNull
